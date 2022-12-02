@@ -54,6 +54,16 @@ contract Fuixlabs {
         nfts.push(NFT(_assetName, _policyId, _assetName, 1, Status.Mint, -1, _assetId));
     }
 
+    function burn(uint _index) public onlyOwner {
+        require(_index < nfts.length, "Index must be less than length of NFTs");
+        emit Log(msg.sender, "Burn an NFT");
+        NFT storage nft = nfts[_index];
+        if (nft.status == Status.Burn) {
+            revert("Already burned");
+        }
+        nft.status = Status.Burn;
+    }
+
     function compare(string memory lhs, string memory rhs) public pure returns (bool) {
         return keccak256(abi.encodePacked(lhs)) == keccak256(abi.encodePacked(rhs));
     }
@@ -93,16 +103,6 @@ contract Fuixlabs {
         NFT storage nft = nfts[_index];
         NFT memory resp = NFT(nft.assetName, nft.policyId, nft.assetName, nft.quantity, nft.status, int(_index), nft.assetId);
         return resp;
-    }
-
-    function burn(uint _index) public onlyOwner {
-        require(_index < nfts.length, "Index must be less than length of NFTs");
-        emit Log(msg.sender, "Burn an NFT");
-        NFT storage nft = nfts[_index];
-        if (nft.status == Status.Burn) {
-            revert("Already burned");
-        }
-        nft.status = Status.Burn;
     }
 
     function statusOf(uint _index) public view returns (Status) {
