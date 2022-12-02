@@ -13,6 +13,11 @@ contract Fuixlabs {
         NotFound
     }
 
+    enum DocumentType {
+        Document,
+        Credential
+    }
+
     struct NFT {
         string name; // keccak256-hash string
         string policyId; // hex-string
@@ -21,6 +26,8 @@ contract Fuixlabs {
         Status status;
         int index;
         string assetId; // policyId + assetName
+        // int parent = -1;
+        // DocumentType docType = DocumentType.Document | DocumentType.Credential;
     }
 
     NFT private natural = NFT("", "", "", 0, Status.NotFound, -1, "");
@@ -64,7 +71,7 @@ contract Fuixlabs {
         nft.status = Status.Burn;
     }
 
-    function compare(string memory lhs, string memory rhs) public pure returns (bool) {
+    function compare(string memory lhs, string memory rhs) private pure returns (bool) {
         return keccak256(abi.encodePacked(lhs)) == keccak256(abi.encodePacked(rhs));
     }
 
