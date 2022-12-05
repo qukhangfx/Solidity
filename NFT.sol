@@ -11,32 +11,6 @@ pragma solidity ^0.8.13;
 // - `memory` - variable is in memory and it exists while a function is being called
 // - `calldata` - special data location that contains function arguments
 
-contract UArray {
-    uint[] private values;
-
-    constructor() {}
-
-    function get(uint index) public view returns (uint) {
-        return values[index];
-    }
-
-    function getValues() public view returns (uint[] memory) {
-        return values;
-    }
-
-    function push(uint value) public {
-        values.push(value);
-    }
-
-    function pop() public {
-        values.pop();
-    }
-
-    function getLength() public view returns (uint) {
-        return values.length;
-    }
-}
-
 contract Fuixlabs {
     string private greet = "Fuixlabs says hi!";
 
@@ -51,6 +25,12 @@ contract Fuixlabs {
     enum DocumentType {
         Document,
         Credential
+    }
+
+    enum FilterBy {
+        PolicyId,
+        AssetName,
+        AssetId
     }
 
     struct NFT {
@@ -93,6 +73,8 @@ contract Fuixlabs {
     function mint(string calldata _policyId, string calldata _assetName) public onlyOwner {
         emit Log(msg.sender, "Mint an NFT");
         string memory _assetId = string(abi.encodePacked(_policyId, _assetName));
+        NFT[] memory assets = fetchNFT(FilterBy.AssetId, _assetId);
+        require(assets.length == 0, "NFT minted.");
         nfts.push(NFT(_assetName, _policyId, _assetName, 1, Status.Mint, -1, _assetId));
     }
 
@@ -106,45 +88,55 @@ contract Fuixlabs {
         nft.status = Status.Burn;
     }
 
-    function compare(string memory lhs, string memory rhs) private pure returns (bool) {
-        return keccak256(abi.encodePacked(lhs)) == keccak256(abi.encodePacked(rhs));
+    function compare(string memory X, string memory Y) private pure returns (bool) {
+        return keccak256(abi.encodePacked(X)) == keccak256(abi.encodePacked(Y));
     }
 
-    // Doesn't work!
-    function searchByAssetName(string calldata _assetName) public returns (uint[] memory) {
-        UArray resp;
+    function satisfy(FilterBy filterBy, NFT memory nft, string memory pattern) private pure returns (bool) {
+        if (filterBy == FilterBy.PolicyId && compare(nft.policyId, pattern)) return true;
+        if (filterBy == FilterBy.AssetName && compare(nft.assetName, pattern)) return true;
+        if (filterBy == FilterBy.AssetId && compare(nft.assetId, pattern)) return true;
+        return false;
+    }
+
+    function fetchNFT(FilterBy filterBy, string memory pattern) private view returns (NFT[] memory) {
+        uint len = 0;
         for (uint _index = 0; _index < nfts.length; _index += 1) {
             NFT storage nft = nfts[_index];
-            if (compare(nft.assetName, _assetName)) {
-                resp.push(_index);
+            if (satisfy(filterBy, nft, pattern)) {
+                len += 1;
             }
         }
-        return resp.getValues();
-    }
-
-    // Doesn't work!
-    function searchByPolicyId(string calldata _policyId) public returns (uint[] memory) {
-        UArray resp;
+        NFT[] memory resp = new NFT[](len);
+        uint id = 0;
         for (uint _index = 0; _index < nfts.length; _index += 1) {
             NFT storage nft = nfts[_index];
-            if (compare(nft.policyId, _policyId)) {
-                resp.push(_index);
+            if (satisfy(filterBy, nft, pattern)) {
+                resp[id] = NFT(nft.assetName, nft.policyId, nft.assetName, nft.quantity, nft.status, int(_index), nft.assetId);
+                id += 1;
             }
         }
-        return resp.getValues();
+        require(id == len, "Something went wrong!");
+        return resp;
     }
 
-    function searchByAssetId(string calldata _assetId) public view returns (NFT memory nft) {
-        for (uint _index = 0; _index < nfts.length; _index += 1) {
-            NFT storage nft = nfts[_index];
-            if (compare(nft.assetId, _assetId)) {
-                return NFT(nft.assetName, nft.policyId, nft.assetName, nft.quantity, nft.status, int(_index), nft.assetId);
-            }
+    function searchByAssetName(string calldata _assetName) public view returns (NFT[] memory) {
+        return fetchNFT(FilterBy.AssetName, _assetName);
+    }
+
+    function searchByPolicyId(string calldata _policyId) public view returns (NFT[] memory) {
+        return fetchNFT(FilterBy.PolicyId, _policyId);
+    }
+
+    function searchByAssetId(string calldata _assetId) public view returns (NFT memory) {
+        NFT[] memory resp = fetchNFT(FilterBy.AssetId, _assetId);
+        if (resp.length == 1) {
+            return resp[0];
         }
         return natural;
     }
 
-    function searchByIndex(uint _index) public view returns (NFT memory nft) {
+    function searchByIndex(uint _index) public view returns (NFT memory) {
         require(_index < nfts.length, "Index must be less than length of NFTs");
         NFT storage nft = nfts[_index];
         NFT memory resp = NFT(nft.assetName, nft.policyId, nft.assetName, nft.quantity, nft.status, int(_index), nft.assetId);
