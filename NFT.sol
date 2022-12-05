@@ -3,8 +3,8 @@
 pragma solidity ^0.8.13;
 
 // Getter functions can be declared view or pure.
-// - `View` function declares that no state will be changed.
-// - `Pure` function declares that no state variable will be changed or read.
+// - `view` function declares that no state will be changed.
+// - `pure` function declares that no state variable will be changed or read.
 
 // Variables are declared as either storage, memory or calldata to explicitly specify the location of the data.
 // - `storage` - variable is a state variable (store on blockchain)
